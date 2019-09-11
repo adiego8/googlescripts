@@ -1,0 +1,65 @@
+//@alejandro.diego
+
+  function notify_googleform() {  
+  
+  var formsheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Form Responses 1").getDataRange().getValues(); // get all the data as a cuadratic array for the 
+  var emailsheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Assigned to").getDataRange().getValues();
+  
+  
+  var numberofrows_fs = formsheet.length ;
+    
+    
+    for(var i = 0; i < numberofrows_fs ; i++) {
+      
+      var column_value_in_row = formsheet[i][11]; // gets the value of an specific column in a specific row [row][column]
+           
+      if (column_value_in_row == "Yes"){
+        var email_to_number = formsheet[i][13]; // get the number in the email column for that row number
+        var case_number = formsheet[i][5];  //get the case number 
+        var claim_number = formsheet[i][3];
+        
+        //need to validate an email in the email cells
+        
+        var email_to = emailsheet[email_to_number - 1][0] ; // from the "assigned to" sheet it gets the email that document will be sent to
+        GmailApp.sendEmail(email_to,"Case number " + case_number, "Claim Number Assigned to this case "+ claim_number);
+        var date = getTime();
+        SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Form Responses 1").getRange(i+1, 12).setValue('Sent: '+ date) ;
+      }//if
+        
+    }//for
+  }//method
+
+
+
+//method to get the current time and zone when an email was sent 
+function getTime(){ 
+  var date = Utilities.formatDate(new Date(), "EST" , "yyyy-MM-dd HH:mm"); 
+  return date; 
+  
+  }
+
+
+
+
+//Structure [row][column]
+//Map of columns
+//0-a
+//1-b
+//2-c
+//3-d
+//4-e
+//5-f
+//6-g
+//7-h
+//8-i
+//9-j
+//10-k
+
+// Fetch the email address
+//var emailRange = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1").getRange("B2");
+//var emailAddress = emailRange.getValues();
+//// Send Alert Email.
+//var message = 'This is your Alert email!'; // Second column
+//var subject = 'Your Google Spreadsheet Alert';
+//MailApp.sendEmail(emailAddress, subject, message);
+
