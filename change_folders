@@ -1,2 +1,52 @@
 #Ops.Analytics@windhaven.com
 Code to change a file from one forlder to another 
+//@alejandro.diego
+
+ 
+function source() {
+  var root_s = DriveApp.getFolderById('0B_9xQ3OBpM8qfmdlNVVwNFFzSVBtU1lHWkp2a0tER0hIVkJ2MXRtZl91QVdXWkR1eWw0bVU'); //get the ID of the source folder
+  var name_s = root_s.getName();
+  var root_dest = DriveApp.getFolderById('1Tfe2ywCSXGL5UmHpJqLXwrmX9DPClcYR'); //get ID of destination folder
+  var name_dest = root_dest.getName();
+  var iterator = root_s.getFiles();
+  const array = [];                    //this array keeps all the files that were starred 
+  const file_name = [];       //array to put the id of the files that are going to be sent via email
+ 
+/*
+Pending crating the notification that is sent every, also pending to create the trigger  
+*/
+       while (iterator.hasNext()){           //iterate over the source folder and check if it is starred
+         var file = iterator.next();
+         if(file.isStarred()){
+           array.push(file);
+          }
+       }
+  
+  //if there is more than one file starred this is how its manipulated by iterating the array with the starred files
+       for(var i = 0 ; i < array.length ; i++){
+          var file = array[i];
+          file.setStarred(false);
+          file.setTrashed(true);
+          var file_in_dest  = file.makeCopy(root_dest);
+          var link = file_in_dest.getUrl(); 
+          var name = file_in_dest.getName();
+          var now = new Date();
+          GmailApp.sendEmail("legalgk.process@windhaven.com","The file "+ name + " was moved at "+ now.toString(), "The file new location is in Assigned Folder. Go to: " + link);
+       }
+ 
+  //*********************  Set up emails notifications  ********************************************************
+       
+//  for(var j = 0 ; j < file_name.length ; j++){
+//    var fileName = file_name[j];
+//    var file_list_in_root_dest_with_that_name = root_dest.getFilesByName(fileName); //get all the files with that name in the destination folder
+//   
+//       while(file_list_in_root_dest_with_that_name.hasNext()){
+//         var file = file_list_in_root_dest_with_that_name.next();
+//         var link = file.getUrl();
+//         var fileid = file.getId();
+//     
+//         
+//       }
+//     }
+                        
+}
