@@ -1,0 +1,72 @@
+
+  function onOpen(e) {
+  
+  var ui = SpreadsheetApp.getUi();
+    
+  ui.createMenu('Sync to Calendar')
+      .addItem('Create Events Now', 'CreateEvent')
+      .addToUi();
+
+  }
+
+
+
+
+  function CreateEvent() {
+  
+    var sheet = SpreadsheetApp.openById('1kD396vGKAYb389nAjIa3g4rq-x2HDUyz7ShoLSd1zOs').getSheetByName('Form Responses 1').getDataRange().getValues();
+    var lastrow = SpreadsheetApp.openById("1kD396vGKAYb389nAjIa3g4rq-x2HDUyz7ShoLSd1zOs").getSheetByName("Form Responses 1").getDataRange().getLastRow();
+    
+    for(var i = 0 ; i < lastrow ; i++){
+        //24 is status
+      if((sheet[i][25] == "PENDING")||(sheet[i][25] == "RESCHEDULE")){
+        
+        var claimnumber = sheet[i][4];  //examine 
+        var location = sheet[i][26];   // location 
+        var date = sheet[i][27];
+        var time = sheet[i][28];
+        var interpreter = sheet[i][9];
+        var attorney = sheet[i][13];
+        var appmt = sheet[i][3];
+        var investigator = sheet[i][8];
+        var examinee = sheet[i][10];
+        var adjuster = sheet[i][1];
+        var index_at = adjuster.indexOf("@");
+        var adj_name = adjuster.substring(0,index_at); 
+        
+        //start time variable 
+        var date_string = date.toString();
+        var time_string = time.toString();
+        var startTime_1 = date_string.substring(0,16);
+        var startTime_2 = time_string.substring(16,33);
+        var startTime = new Date(startTime_1+startTime_2);
+        
+        //end time variable
+        var end_time_string = (Number(time_string.substring(16,18))+1).toString();
+        var endTime_1 = date_string.substring(0,16);
+        var endTime_2 = end_time_string.concat(time_string.substring(18,33)); 
+        var endTime = new Date(endTime_1+endTime_2);
+        
+              
+          
+        var event_name = adj_name.concat(" ",claimnumber," ",investigator); //this is to create the event name
+        
+                
+        CalendarApp.getCalendarById("main.process@windhaven.com").createEvent(event_name, startTime, endTime, 
+                                                                              {location: location,
+                                                                               description: examinee + "\nInterpreter: "+ interpreter +
+                                                                               "\nAttorney: "+ attorney +
+                                                                               "\nAppmt#: " + appmt +
+                                                                               "\nAdjuster: " + adjuster});
+                       
+        var status = SpreadsheetApp.openById("1kD396vGKAYb389nAjIa3g4rq-x2HDUyz7ShoLSd1zOs").getSheetByName("Form Responses 1").getRange(i+1,26);
+        status.setValue("SCHEDULED");
+      
+      }
+      
+    }
+    
+    
+  
+    
+}
