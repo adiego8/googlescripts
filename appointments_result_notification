@@ -1,0 +1,81 @@
+
+//Notification based on the colors of events in Google Calendar
+
+function myFunction() {
+  
+  var show = [];
+  var show_string = "";
+  var no_show = [];
+  var no_show_string = "";
+  var reschedule = [];
+  
+   
+  
+  var date = new Date();
+  
+  var yesterday = new Date();
+  
+  yesterday.setDate(date.getDate()-1);
+  
+  var previous_day_event = CalendarApp.getEventsForDay(yesterday);
+  
+  for(var i = 0 ; i < previous_day_event.length ; i++){
+    
+    var event_color = previous_day_event[i].getColor();
+    
+    //CREATE THE ARRAYS WITH THE LIST OF SHOW AND NO SHOW
+    
+    if(event_color == 11){  //here is the color defined DARK GREEN
+      no_show.push(previous_day_event[i].getTitle());
+    }
+    if(event_color == 10){ //here is the color defined RED TOMATO
+      show.push(previous_day_event[i].getTitle());    
+    }
+    if(event_color == 5){ //here is the color defined DARK YELLOW
+      reschedule.push(previous_day_event[i].getTitle());    
+    }    
+  
+  }
+  
+  for (var i = 0 ; i < show.length; i++){                      //BUILD STRINGS WITH THE LIST OF SHOW AND NO SHOW APPOINTMENTS
+   show_string = show_string.concat(show[i],"\n");
+  }
+  
+  for (var i = 0 ; i < no_show.length; i++){
+   no_show_string = no_show_string.concat(no_show[i],"\n");
+  }
+  
+  GmailApp.sendEmail("main.process@windhaven.com", "EUO APPMTS SUMMARY FOR "+ yesterday , 
+                     "Appointments SHOW:\n" + show_string
+                     + "Appointments NO SHOW:\n"
+                     + no_show_string ,
+                     {                     
+                     cc:"alejandro.diego@windhaven.com,daniel.prieto@windhaven.com",
+                     name:"Automatic Email Sender"
+                     });
+  
+  
+  
+  //intelligence to reschedule, if reschedule array is not empty then means we need to reschedule appoinments schedulers will receive the notifications of 
+  //appointments that needs to be rescheduled and they will reflect that in the schedule
+  for (var i = 0 ; i < reschedule.length; i++){
+    
+    var appmt_name = reschedule[i]; 
+    
+    var index = appmt_name.indexOf(" ");
+    var adj_name = appmt_name.substring(0,index);
+    var adj_email = adj_name.concat("@windhaven.com")
+    
+    GmailApp.sendEmail(adj_email, "EUO APPMTS SUMMARY FOR "+yesterday , 
+                     "Appointments to RESCHEDULE:\n" + appmt_name ,
+                     {                     
+                     cc:"alejandro.diego@windhaven.com,glenn.hernandez@windhaven.com",
+                     name:"Automatic Email Sender"
+                     });
+   
+    }
+  
+  
+  
+  
+}
