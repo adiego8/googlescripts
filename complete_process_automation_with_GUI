@@ -1,0 +1,239 @@
+
+/*
+Using two spreadsheets one to get locations and the other with all the records
+*/
+
+
+
+/*GUI FUNCTION*/
+
+  function onOpen(e) {
+  
+  var ui = SpreadsheetApp.getUi();
+    
+  ui.createMenu('Custom Functions').addSeparator()
+      .addItem('Sync to Calendar', 'CreateEvent').addItem('Set Locations','setLocation').addItem('Yesterday Results', 'notificationYesterday')
+      .addToUi();
+
+  }
+
+
+
+
+/*---------------------------------------------------------------------------*****************************----------------------------------------------------------------------------
+
+
+  
+/*FUNCTION TO CREATE THE EVENT IN THE CALENDAR*/
+
+  function CreateEvent() {
+  
+    var sheet = SpreadsheetApp.openById('1kD396vGKAYb389nAjIa3g4rq-x2HDUyz7ShoLSd1zOs').getSheetByName('Form Responses 1').getDataRange().getValues();
+    var lastrow = SpreadsheetApp.openById("1kD396vGKAYb389nAjIa3g4rq-x2HDUyz7ShoLSd1zOs").getSheetByName("Form Responses 1").getDataRange().getLastRow();
+    
+    for(var i = 0 ; i < lastrow ; i++){
+        //24 is status
+      if((sheet[i][25] == "PENDING")||(sheet[i][25] == "RESCHEDULE")){
+        
+        var claimnumber = sheet[i][4];  //examine 
+        var location = sheet[i][26];   // location 
+        var date = sheet[i][27];
+        var time = sheet[i][28];
+        var interpreter = sheet[i][9];
+        var attorney = sheet[i][13];
+        var appmt = sheet[i][3];
+        var investigator = sheet[i][8];
+        var examinee = sheet[i][10];
+        var adjuster = sheet[i][1];
+        var index_at = adjuster.indexOf("@");
+        var adj_name = adjuster.substring(0,index_at); 
+        
+        
+        
+        //start time variable 
+        var date_string = date.toString();
+        var time_string = time.toString();
+        var startTime_1 = date_string.substring(0,16);
+        var startTime_2 = time_string.substring(16,33);
+        var startTime = new Date(startTime_1+startTime_2);
+        
+        //end time variable
+        var end_time_string = (Number(time_string.substring(16,18))+1).toString();
+        var endTime_1 = date_string.substring(0,16);
+        var endTime_2 = end_time_string.concat(time_string.substring(18,33)); 
+        var endTime = new Date(endTime_1+endTime_2);
+        
+              
+          
+        var event_name = adj_name.concat(" ",claimnumber," ",investigator); //this is to create the event name
+        
+                
+        CalendarApp.getCalendarById("main.process@windhaven.com").createEvent(event_name, startTime, endTime, 
+                                                                              {location: location,
+                                                                               description: examinee + "\nInterpreter: "+ interpreter +
+                                                                               "\nAttorney: "+ attorney +
+                                                                               "\nAppmt#: " + appmt +
+                                                                               "\nAdjuster: " + adjuster});
+                       
+        var status = SpreadsheetApp.openById("1kD396vGKAYb389nAjIa3g4rq-x2HDUyz7ShoLSd1zOs").getSheetByName("Form Responses 1").getRange(i+1,26);
+        status.setValue("SCHEDULED");
+      
+      }
+      
+    }
+  
+}
+
+
+
+/*---------------------------------------------------------------------------*****************************----------------------------------------------------------------------------
+
+
+/*FUNCTION TO SET THE LOCATION WHERE EUO WILL TAKE PLACE*/
+
+function setLocation(){
+    //get the closest EUO location to the address provided by examinee
+  
+  var sheetlocation = SpreadsheetApp.openById('1whSChPXfdqMzETF_Ksu0bcH_g31QUBXLjgM6r2b3lUI').getSheetByName('Sheet1').getDataRange().getValues(); //EUO Location END
+  var sheet = SpreadsheetApp.openById('1kD396vGKAYb389nAjIa3g4rq-x2HDUyz7ShoLSd1zOs').getSheetByName('Form Responses 1').getDataRange().getValues(); // Examinee Address ORIGIN
+  
+  var sheetlocation_length = sheetlocation.length; // end
+  var sheet_length = sheet.length;       // origin
+  
+  var origin_address = [];
+  var origin_position = [];
+  
+   
+  for(var i = 0 ; i < sheet_length ; i++){
+    
+    if((sheet[i][25]=="PENDING") || (sheet[i][25]=="RESCHEDULE")){
+      var address = sheet[i][11].concat(" ",sheet[i][12]);
+      origin_address.push(address);
+      origin_position.push(i);
+    }
+  
+  }
+  
+  var length = origin_position.length;
+  
+  for(var i = 0 ; i < length ; i++){
+    
+    var distances = [];
+    var distances_ordered = []
+    distances_ordered.sort();
+    var origin = origin_address[i];
+   
+    
+    for(var j = 1 ; j < sheetlocation.length ; j++){
+     
+      var destination = sheetlocation[j][0];
+      var directions = Maps.newDirectionFinder().setOrigin(origin).setDestination(destination).getDirections();
+      var distance = directions.routes[0].legs[0].distance.value;
+      distances.push(distance);
+      var value = SpreadsheetApp.openById("1whSChPXfdqMzETF_Ksu0bcH_g31QUBXLjgM6r2b3lUI").getSheetByName("Sheet1").getRange(j+1,2);
+      value.setValue(distance);
+    }
+    
+    distances_ordered = distances.slice(); //return a real copy of an array
+    distances_ordered.sort(function(a,b){return a-b;}); //to sort the values as integers and not as per their numeration
+    
+    var shortdistance = distances_ordered[0];
+    var address_location_position = distances.indexOf(shortdistance);
+    var location_to_put = sheetlocation[address_location_position + 1][0];
+    
+    
+    //here is to write in the sheet and we need to change the ID and sheet name this is writing in the column AA 
+    
+    var put_location = SpreadsheetApp.openById("1kD396vGKAYb389nAjIa3g4rq-x2HDUyz7ShoLSd1zOs").getSheetByName("Form Responses 1").getRange(origin_position[i]+1,27);
+    put_location.setValue(location_to_put);
+    var e = 2;
+  }
+   
+}
+
+
+/*---------------------------------------------------------------------------*****************************----------------------------------------------------------------------------
+
+
+/*FUNCTION TO SEND NOTIFICATIONS FROM YESTERDAY*/
+
+function notificationYesterday(){
+    
+  var show = [];
+  var show_string = "";
+  var no_show = [];
+  var no_show_string = "";
+  var reschedule = [];
+   
+  var date = new Date();
+  
+  var yesterday = new Date();
+  
+  yesterday.setDate(date.getDate()-1);
+  
+  var previous_day_event = CalendarApp.getEventsForDay(yesterday);
+  
+  for(var i = 0 ; i < previous_day_event.length ; i++){
+    
+    var event_color = previous_day_event[i].getColor();
+    
+    //CREATE THE ARRAYS WITH THE LIST OF SHOW AND NO SHOW
+    
+    if(event_color == 11){  //here is the color defined DARK GREEN
+      no_show.push(previous_day_event[i].getTitle());
+    }
+    if(event_color == 10){ //here is the color defined RED TOMATO
+      show.push(previous_day_event[i].getTitle());    
+    }
+    if(event_color == 5){ //here is the color defined DARK YELLOW
+      reschedule.push(previous_day_event[i].getTitle());    
+    }    
+  
+  }
+  
+  
+  for (var i = 0 ; i < show.length; i++){                      //BUILD STRINGS WITH THE LIST OF SHOW AND NO SHOW APPOINTMENTS
+   show_string = show_string.concat(show[i],"\n");
+  }
+  
+  for (var i = 0 ; i < no_show.length; i++){
+   no_show_string = no_show_string.concat(no_show[i],"\n");
+  }
+  
+  GmailApp.sendEmail("main.process@windhaven.com", "EUO APPMTS SUMMARY FOR "+ yesterday , 
+                     "Appointments SHOW:\n" + show_string
+                     + "Appointments NO SHOW:\n"
+                     + no_show_string ,
+                     {                     
+                     cc:"alejandro.diego@windhaven.com,daniel.prieto@windhaven.com",
+                     name:"Automatic Email Sender"
+                     });
+  
+  
+  
+  /*
+  intelligence to reschedule, if reschedule array is not empty that means we need to reschedule appoinments schedulers and adjusters will receive the notifications of 
+  appointments that needs to be rescheduled and they will reflect that in the schedule but the main person to that will receive the notification 
+  */
+  
+  for (var i = 0 ; i < reschedule.length; i++){
+    
+    var appmt_name = reschedule[i]; 
+    
+    var index = appmt_name.indexOf(" ");
+    var adj_name = appmt_name.substring(0,index);
+    var adj_email = adj_name.concat("@windhaven.com")
+    
+    GmailApp.sendEmail(adj_email, "EUO APPMTS SUMMARY FOR "+yesterday , 
+                     "Appointments to RESCHEDULE:\n" + appmt_name ,
+                     {                     
+                     cc:"alejandro.diego@windhaven.com,glenn.hernandez@windhaven.com",
+                     name:"Automatic Email Sender"
+                     });
+   
+    }
+  
+}
+
+
+
